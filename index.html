@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ਅੱਖਰ-ਪੂਰਤੀ: ਖਾਲੀ ਥਾਵਾਂ ਭਰੋ</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f7f1e3;
+            --t1-color: #ff5252;
+            --t2-color: #33d9b2;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .header-title {
+            color: #2c2c54;
+            font-size: 32px;
+            text-shadow: 2px 2px #d1ccc0;
+            margin-bottom: 15px;
+        }
+
+        .scoreboard {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .team-card {
+            padding: 15px 30px;
+            border-radius: 20px;
+            font-size: 28px;
+            font-weight: 900;
+            color: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            transition: 0.4s;
+        }
+
+        .active-team {
+            transform: scale(1.1);
+            border: 6px solid #40407a;
+            box-shadow: 0 15px 25px rgba(0,0,0,0.25);
+        }
+
+        .game-area {
+            width: 95%;
+            max-width: 850px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        }
+
+        .word-box {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 80px;
+            align-items: center;
+            gap: 20px;
+            background: #f1f2f6;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 20px;
+            border-bottom: 6px solid #dfe4ea;
+        }
+
+        .display-word {
+            font-size: 45px;
+            font-weight: 900;
+            color: #2f3542;
+            letter-spacing: 5px;
+        }
+
+        .missing-part {
+            color: #ff4757;
+            text-decoration: underline;
+            padding: 0 5px;
+        }
+
+        .options-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .opt-btn {
+            padding: 15px 20px;
+            font-size: 26px;
+            font-weight: 900;
+            cursor: pointer;
+            border: none;
+            border-radius: 15px;
+            color: white;
+            transition: 0.2s;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+        }
+
+        .opt-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+
+        /* ਰੰਗ-ਬਿਰੰਗੇ ਬਟਨ */
+        .c1 { background: #ff6b6b; } .c2 { background: #1dd1a1; }
+        .c3 { background: #54a0ff; } .c4 { background: #feca57; }
+        .c5 { background: #a29bfe; }
+
+        .reset-btn {
+            background: #dcdde1;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #7f8c8d;
+        }
+
+        .reset-btn:hover { background: #b2bec3; }
+
+        .next-turn-btn {
+            margin-top: 30px;
+            padding: 20px 60px;
+            font-size: 26px;
+            background: #40407a;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="header-title">ਅੱਖਰ-ਪੂਰਤੀ (ਖਾਲੀ ਥਾਵਾਂ ਭਰੋ)</h1>
+
+    <div class="scoreboard">
+        <div id="t1-ui" class="team-card active-team" style="background-color: var(--t1-color);">
+            ਟੀਮ ਏ: <span id="s1">0</span>
+        </div>
+        <div id="t2-ui" class="team-card" style="background-color: var(--t2-color);">
+            ਟੀਮ ਬੀ: <span id="s2">0</span>
+        </div>
+    </div>
+
+    <div class="game-area" id="main-board"></div>
+
+    <button class="next-turn-btn" onclick="switchTeam()">ਅਗਲੀ ਟੀਮ ਦੀ ਵਾਰੀ</button>
+
+<script>
+    // 2000 ਸ਼ਬਦਾਂ ਦੀ ਲਿਸਟ ਲਈ ਸਿਸਟਮ (ਇੱਥੇ ਕੁਝ ਨਮੂਨੇ ਹਨ)
+    const wordsDatabase = [
+        "ਸਕੂਲ", "ਕਿਤਾਬ", "ਪਾਣੀ", "ਰੋਟੀ", "ਬਾਗ", "ਸੂਰਜ", "ਧਰਤੀ", "ਅਸਮਾਨ", "ਪਹਾੜ", "ਦਰਿਆ",
+        "ਕੁਰਸੀ", "ਪੱਖਾ", "ਖਿੜਕੀ", "ਬੱਦਲ", "ਗੁਲਾਬ", "ਕਣਕ", "ਮਟਰ", "ਗਾਜਰ", "ਸੇਬ", "ਕੇਲਾ",
+        "ਪੰਜਾਬ", "ਭਾਰਤ", "ਸ਼ਹਿਰ", "ਸਾਈਕਲ", "ਜਲੇਬੀ", "ਬਰਫੀ", "ਲੱਡੂ", "ਸਮੋਸਾ", "ਪਨੀਰ", "ਥਾਲੀ"
+    ];
+
+    let currentTeam = 1;
+    let scores = { 1: 0, 2: 0 };
+
+    function splitPunjabi(word) {
+        return word.match(/[\u0A00-\u0A7F][\u0A01-\u0A03\u0A3C\u0A3E-\u0A4C\u0A51\u0A70-\u0A71\u0A75]*/g);
+    }
+
+    function initGame() {
+        const board = document.getElementById('main-board');
+        board.innerHTML = '';
+        const shuffled = wordsDatabase.sort(() => 0.5 - Math.random()).slice(0, 5);
+
+        shuffled.forEach((word, idx) => {
+            const parts = splitPunjabi(word);
+            const missingIdx = Math.floor(Math.random() * parts.length);
+            const missingChar = parts[missingIdx];
+            
+            // ਸ਼ਬਦ ਦਾ ਪ੍ਰਦਰਸ਼ਨ (ਖਾਲੀ ਥਾਂ ਨਾਲ)
+            let displayStr = "";
+            parts.forEach((p, i) => {
+                displayStr += (i === missingIdx) ? `<span class="missing-part" id="blank-${idx}">_</span>` : p;
+            });
+
+            const row = document.createElement('div');
+            row.className = 'word-box';
+            row.id = `row-${idx}`;
+
+            const wordDisplay = document.createElement('div');
+            wordDisplay.className = 'display-word';
+            wordDisplay.innerHTML = displayStr;
+
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'options-container';
+
+            // 3 ਗਲਤ ਵਿਕਲਪ ਬਣਾਉਣਾ
+            let options = [missingChar];
+            while(options.length < 4) {
+                let randomWord = wordsDatabase[Math.floor(Math.random() * wordsDatabase.length)];
+                let randomChar = splitPunjabi(randomWord)[0];
+                if(!options.includes(randomChar)) options.push(randomChar);
+            }
+            options.sort(() => 0.5 - Math.random());
+
+            options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = `opt-btn c${(i%5)+1}`;
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    if(opt === missingChar) {
+                        document.getElementById(`blank-${idx}`).innerText = opt;
+                        document.getElementById(`blank-${idx}`).style.color = "#2ecc71";
+                        row.style.background = "#d1ffdb";
+                        row.style.borderBottom = "6px solid #2ecc71";
+                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.7 } });
+                        scores[currentTeam]++;
+                        updateUI();
+                    } else {
+                        btn.style.opacity = "0.3";
+                        btn.disabled = true;
+                    }
+                };
+                optionsDiv.appendChild(btn);
+            });
+
+            const resetBtn = document.createElement('button');
+            resetBtn.className = 'reset-btn';
+            resetBtn.innerHTML = '🔄';
+            resetBtn.onclick = () => {
+                row.style.background = "#f1f2f6";
+                document.getElementById(`blank-${idx}`).innerText = "_";
+                Array.from(optionsDiv.children).forEach(b => {
+                    b.style.opacity = "1";
+                    b.disabled = false;
+                });
+            };
+
+            row.appendChild(wordDisplay);
+            row.appendChild(optionsDiv);
+            row.appendChild(resetBtn);
+            board.appendChild(row);
+        });
+    }
+
+    function updateUI() {
+        document.getElementById('s1').innerText = scores[1];
+        document.getElementById('s2').innerText = scores[2];
+    }
+
+    function switchTeam() {
+        currentTeam = currentTeam === 1 ? 2 : 1;
+        document.getElementById('t1-ui').classList.toggle('active-team');
+        document.getElementById('t2-ui').classList.toggle('active-team');
+        initGame();
+    }
+
+    initGame();
+</script>
+
+</body>
+</html>
